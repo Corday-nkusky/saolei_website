@@ -11,6 +11,7 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core';
 import { ElOption, ElSelect } from 'element-plus';
+import type { Options } from 'element-plus';
 import { computed, shallowRef, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -49,19 +50,18 @@ const appendTo = computed<HTMLElement | undefined>(() => {
 });
 
 // 全屏元素是 position: fixed，祖先容器塌缩，Popper 会误判下方空间不足把面板翻到右侧，
-// 因此全屏时以 viewport 作为边界。
-const popperOptions = computed<Record<string, unknown> | undefined>(() => {
+// 因此全屏时只以 viewport 作为裁剪边界。
+const popperOptions = computed<Partial<Options> | undefined>(() => {
     if (appendTo.value === undefined) return undefined;
+    // Popper 的 boundary 只接受 'clippingParents' 或元素数组；清空后裁剪范围只剩 rootBoundary。
+    const viewportBoundary = { boundary: [], rootBoundary: 'viewport' };
     return {
         modifiers: [
             {
                 name: 'flip',
-                options: {
-                    boundary: 'viewport',
-                    fallbackPlacements: ['bottom-start', 'top-start'],
-                },
+                options: { ...viewportBoundary, fallbackPlacements: ['bottom-start', 'top-start'] },
             },
-            { name: 'preventOverflow', options: { boundary: 'viewport' } },
+            { name: 'preventOverflow', options: viewportBoundary },
         ],
     };
 });

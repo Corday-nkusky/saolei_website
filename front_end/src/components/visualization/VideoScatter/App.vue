@@ -24,17 +24,16 @@ const props = defineProps({
 const scatterRef = useTemplateRef<HTMLDivElement>('scatterRef');
 const { isFullscreen, toggle } = useFullscreen(scatterRef);
 
-type TippyHost = HTMLElement & { _tippy?: { popper?: HTMLElement } };
+type TippyHost = HTMLElement & { _tippy?: { hide: () => void } };
 
-// tippy 只在浮层首次显示时挂载 DOM，之后再进/出全屏不会重新挂载。
-// 这里把已经存在的浮层跟着搬进全屏子树，退出时搬回 body。
-watch(isFullscreen, (fullscreen) => {
+// tippy 隐藏时会卸载浮层，下次显示再按 appendTo 重新挂载（见 Canvas / MarkerSetting）。
+// 因此全屏切换只需收起已展开的浮层：留在 body 上的浮层不会进入全屏绘制子树，
+// 而新展开的浮层会自动挂到全屏元素内。
+watch(isFullscreen, () => {
     const root = scatterRef.value;
     if (!root) return;
-    const target = fullscreen ? root : document.body;
     root.querySelectorAll<TippyHost>('.video-scatter-tippy, .marker-setting-tippy').forEach((element) => {
-        const popper: HTMLElement | undefined = element._tippy?.popper;
-        if (popper !== undefined && popper.parentElement !== target) target.appendChild(popper);
+        element._tippy?.hide();
     });
 });
 
